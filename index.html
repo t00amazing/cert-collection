@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2026 교직원 의무연수 이수증 제출</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Pretendard', 'ui-sans-serif', 'system-ui'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          teal: { DEFAULT: '#0E7C6B', dim: '#E3F2EF' },
+          clay: { DEFAULT: '#C0693A', dim: '#FBEEE5' },
+          stamp: '#B23B2E',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body{ font-family:'Pretendard', ui-sans-serif, system-ui, sans-serif; }
+  .mono{ font-family:'JetBrains Mono', ui-monospace, monospace; }
+  .stamp-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:60px; height:60px; border-radius:9999px;
+    border:2.5px solid #B23B2E; color:#B23B2E;
+    font-weight:800; font-size:11.5px; line-height:1.15;
+    transform:rotate(-9deg); position:relative; flex-shrink:0; text-align:center;
+  }
+  .stamp-badge::before{
+    content:''; position:absolute; inset:4px;
+    border:1px solid #B23B2E; border-radius:9999px; opacity:.55;
+  }
+  .stamp-pop{ animation:stampIn .38s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes stampIn{
+    0%{ transform:rotate(-9deg) scale(1.9); opacity:0; }
+    60%{ opacity:1; }
+    100%{ transform:rotate(-9deg) scale(1); opacity:1; }
+  }
+  .fade-in{ animation:fadeIn .2s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#D9D5C8; border-radius:8px; }
+</style>
+</head>
+<body class="bg-[#F6F4EF] text-[#1E2438] min-h-screen pb-16">
+
+<!-- 헤더 -->
+<header class="max-w-3xl mx-auto px-5 pt-8 pb-2">
+  <div class="mono text-[11px] tracking-[.14em] text-teal font-medium uppercase">2026 · Teacher Training Compliance</div>
+  <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">2026 교직원 의무연수 이수증 제출</h1>
+  <p class="text-sm text-[#4B5266] mt-1">의무연수1 · 의무연수2 이수증을 제출하고 현황을 확인하세요.</p>
+</header>
+
+<main class="max-w-3xl mx-auto px-5 mt-4 space-y-6">
+
+  <!-- 마감 안내 배너 -->
+  <div class="flex items-start gap-3 bg-clay-dim border border-clay/30 rounded-2xl px-5 py-4">
+    <span class="text-xl leading-none">⏰</span>
+    <div>
+      <p class="font-bold text-clay text-[15px]">11월까지 의무연수1 · 의무연수2 이수증 제출을 완료해주세요.</p>
+      <p class="text-[13px] text-[#8B6A54] mt-0.5">기한 내 미제출 시 별도 안내가 있을 예정입니다.</p>
+    </div>
+  </div>
+
+  <!-- 현황 (상시 노출) -->
+  <section>
+    <div id="statGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-white border border-[#E4E0D6] rounded-2xl p-6">
+        <div class="mono text-[11px] tracking-wide text-[#8B8A80] uppercase">Loading</div>
+        <h2 class="text-lg font-bold mt-1">불러오는 중…</h2>
+      </div>
+      <div class="bg-white border border-[#E4E0D6] rounded-2xl p-6">
+        <div class="mono text-[11px] tracking-wide text-[#8B8A80] uppercase">Loading</div>
+        <h2 class="text-lg font-bold mt-1">불러오는 중…</h2>
+      </div>
+    </div>
+    <div class="flex items-center justify-between mt-3">
+      <div class="mono text-xs text-[#8B8A80]" id="updatedAt">-</div>
+      <button id="refreshBtn" class="text-xs font-semibold text-[#4B5266] border border-[#E4E0D6] bg-white rounded-lg px-3 py-1.5 hover:border-teal hover:text-teal transition">새로고침</button>
+    </div>
+  </section>
+
+  <!-- 탭: 제출 / 조회 -->
+  <section>
+    <div class="flex gap-1 border-b border-[#E4E0D6]">
+      <button class="tab-btn active text-[14.5px] font-semibold px-4 pb-3 pt-2 border-b-2 border-teal text-[#1E2438]" data-tab="submit">제출</button>
+      <button class="tab-btn text-[14.5px] font-semibold px-4 pb-3 pt-2 border-b-2 border-transparent text-[#8B8A80]" data-tab="check">조회</button>
+    </div>
+
+    <!-- 제출 패널 -->
+    <div class="panel mt-5" id="panel-submit">
+      <div class="bg-white border border-[#E4E0D6] rounded-2xl p-5">
+        <label class="text-xs font-semibold text-[#8B8A80] tracking-wide">이름 검색</label>
+        <input type="text" id="submitSearch" placeholder="이름을 입력하세요 (예: 홍길동)" autocomplete="off"
+          class="w-full mt-2 px-4 py-3 border border-[#E4E0D6] rounded-xl bg-[#F6F4EF] text-[15px] focus:outline-none focus:ring-2 focus:ring-teal" />
+        <div id="submitMatchList" class="hidden mt-2 max-h-56 overflow-y-auto border border-[#E4E0D6] rounded-xl divide-y divide-[#E4E0D6]"></div>
+      </div>
+
+      <div class="detail-card hidden mt-4 bg-white border border-[#E4E0D6] rounded-2xl p-5" id="submitDetail">
+        <div class="flex items-center gap-2 text-lg font-extrabold">
+          <span id="submitName">-</span>
+          <span class="mono text-[11px] font-normal text-[#8B8A80] bg-[#F6F4EF] px-2 py-0.5 rounded" id="submitIdTag">-</span>
+        </div>
+
+        <div class="course-row flex items-center justify-between gap-4 flex-wrap mt-4 p-4 border border-[#E4E0D6] rounded-xl" id="courseRow1">
+          <div>
+            <div class="font-bold text-[14.5px]">의무연수1</div>
+            <div class="text-xs text-[#8B8A80] mt-0.5">PDF 이수증 첨부 후 제출</div>
+          </div>
+          <div class="flex items-center gap-2" id="courseUpload1"></div>
+        </div>
+
+        <div class="course-row flex items-center justify-between gap-4 flex-wrap mt-3 p-4 border border-[#E4E0D6] rounded-xl" id="courseRow2">
+          <div>
+            <div class="font-bold text-[14.5px]">의무연수2</div>
+            <div class="text-xs text-[#8B8A80] mt-0.5">PDF 이수증 첨부 후 제출</div>
+          </div>
+          <div class="flex items-center gap-2" id="courseUpload2"></div>
+        </div>
+
+        <div class="hidden mt-4 pt-3 border-t border-dashed border-[#E4E0D6] text-[13px] text-[#4B5266]" id="submitRemarksLine">
+          <span class="text-[#8B8A80]">비고</span> · <span id="submitRemarks"></span>
+        </div>
+
+        <div class="msg hidden mt-3 text-[13.5px] px-3.5 py-2.5 rounded-lg" id="submitMsg"></div>
+      </div>
+    </div>
+
+    <!-- 조회 패널 -->
+    <div class="panel hidden mt-5" id="panel-check">
+      <div class="bg-white border border-[#E4E0D6] rounded-2xl p-5">
+        <label class="text-xs font-semibold text-[#8B8A80] tracking-wide">이름 검색</label>
+        <input type="text" id="checkSearch" placeholder="이름을 입력하세요 (예: 홍길동)" autocomplete="off"
+          class="w-full mt-2 px-4 py-3 border border-[#E4E0D6] rounded-xl bg-[#F6F4EF] text-[15px] focus:outline-none focus:ring-2 focus:ring-teal" />
+        <div id="checkMatchList" class="hidden mt-2 max-h-56 overflow-y-auto border border-[#E4E0D6] rounded-xl divide-y divide-[#E4E0D6]"></div>
+      </div>
+
+      <div class="detail-card hidden mt-4 bg-white border border-[#E4E0D6] rounded-2xl p-5" id="checkDetail">
+        <div class="flex items-center gap-2 text-lg font-extrabold">
+          <span id="checkName">-</span>
+          <span class="mono text-[11px] font-normal text-[#8B8A80] bg-[#F6F4EF] px-2 py-0.5 rounded" id="checkIdTag">-</span>
+        </div>
+
+        <div class="flex items-center justify-between gap-4 flex-wrap mt-4 p-4 border border-[#E4E0D6] rounded-xl">
+          <div class="font-bold text-[14.5px]">의무연수1</div>
+          <div id="checkStatus1"></div>
+        </div>
+
+        <div class="flex items-center justify-between gap-4 flex-wrap mt-3 p-4 border border-[#E4E0D6] rounded-xl">
+          <div class="font-bold text-[14.5px]">의무연수2</div>
+          <div id="checkStatus2"></div>
+        </div>
+
+        <div class="hidden mt-4 pt-3 border-t border-dashed border-[#E4E0D6] text-[13px] text-[#4B5266]" id="checkRemarksLine">
+          <span class="text-[#8B8A80]">비고</span> · <span id="checkRemarks"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="max-w-3xl mx-auto px-5 mt-10 mono text-[11px] text-[#8B8A80]">2026 교직원 의무연수 이수증 제출 시스템 · Google Sheets 연동</footer>
+
+<script>
+// ⚠️ 배포 후 Apps Script 웹 앱 URL로 교체하세요
+const SCRIPT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+
+let ROSTER = [];
+let STATS = null;
+
+// ===== 탭 전환 (제출/조회) =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active', 'border-teal', 'text-[#1E2438]');
+      b.classList.add('border-transparent', 'text-[#8B8A80]');
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+
+    btn.classList.add('active', 'border-teal', 'text-[#1E2438]');
+    btn.classList.remove('border-transparent', 'text-[#8B8A80]');
+    document.getElementById('panel-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// ===== 데이터 로드 =====
+async function loadData(){
+  try{
+    const res = await fetch(SCRIPT_URL + '?action=list');
+    const data = await res.json();
+    if(!data.success){ throw new Error(data.message || '데이터를 불러오지 못했습니다.'); }
+    ROSTER = data.roster;
+    STATS = data.stats;
+    renderStats();
+    document.getElementById('updatedAt').textContent =
+      '마지막 업데이트 ' + new Date(data.updatedAt).toLocaleString('ko-KR');
+  }catch(err){
+    document.getElementById('statGrid').innerHTML =
+      `<div class="bg-white border border-[#E4E0D6] rounded-2xl p-6 sm:col-span-2">
+         <div class="mono text-[11px] text-stamp uppercase">Error</div>
+         <h2 class="text-lg font-bold mt-1">불러오기 실패</h2>
+         <p class="text-sm text-[#8B8A80] mt-2">${err.message}<br>SCRIPT_URL 설정을 확인하세요.</p>
+       </div>`;
+  }
+}
+
+function renderStats(){
+  const grid = document.getElementById('statGrid');
+  grid.innerHTML = statCardHtml('의무연수1', STATS.course1) + statCardHtml('의무연수2', STATS.course2);
+}
+
+function statCardHtml(label, s){
+  const total = s.completed + s.notCompleted;
+  const pct = total ? Math.round((s.completed/total)*100) : 0;
+  return `
+    <div class="bg-white border border-[#E4E0D6] rounded-2xl p-6">
+      <div class="mono text-[11px] tracking-wide text-[#8B8A80] uppercase">${label} · Total ${total}</div>
+      <h2 class="text-lg font-bold mt-1">${label} 이수 현황</h2>
+      <div class="flex items-baseline justify-between py-2">
+        <div class="text-[13.5px] text-[#4B5266]">이수 완료</div>
+        <div class="mono text-xl font-bold text-teal">${s.completed}</div>
+      </div>
+      <div class="flex items-baseline justify-between py-2 border-t border-dashed border-[#E4E0D6]">
+        <div class="text-[13.5px] text-[#4B5266]">미이수</div>
+        <div class="mono text-xl font-bold text-clay">${s.notCompleted}</div>
+      </div>
+      <div class="h-2 rounded-full bg-[#E4E0D6] mt-3 overflow-hidden">
+        <div class="h-full rounded-full bg-teal transition-all duration-500" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+}
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  document.getElementById('statGrid').innerHTML =
+    `<div class="bg-white border border-[#E4E0D6] rounded-2xl p-6"><div class="mono text-[11px] text-[#8B8A80] uppercase">Loading</div><h2 class="text-lg font-bold mt-1">불러오는 중…</h2></div>`.repeat(2);
+  loadData();
+});
+
+// ===== 검색 공통 로직 =====
+function setupSearch(inputId, listId, onSelect){
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if(!q){ list.classList.add('hidden'); list.innerHTML=''; return; }
+    const matches = ROSTER.filter(r => r.name.includes(q)).slice(0, 20);
+    if(matches.length === 0){
+      list.innerHTML = '<div class="px-4 py-3 text-sm text-[#8B8A80]">일치하는 이름이 없습니다</div>';
+      list.classList.remove('hidden');
+      return;
+    }
+    list.innerHTML = matches.map(m =>
+      `<div class="match-item flex items-center justify-between px-4 py-2.5 text-[14.5px] cursor-pointer hover:bg-teal-dim" data-id="${m.id}">
+        <span>${m.name}</span>
+        <span class="mono text-[11px] text-[#8B8A80]">${m.id}</span>
+      </div>`
+    ).join('');
+    list.classList.remove('hidden');
+
+    list.querySelectorAll('.match-item[data-id]').forEach(item => {
+      item.addEventListener('click', () => {
+        const r = ROSTER.find(x => x.id === item.dataset.id);
+        input.value = r.name;
+        list.classList.add('hidden');
+        onSelect(r);
+      });
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!input.contains(e.target) && !list.contains(e.target)) list.classList.add('hidden');
+  });
+}
+
+// ===== 제출 탭 =====
+setupSearch('submitSearch', 'submitMatchList', (r) => {
+  renderSubmitDetail(r);
+});
+
+function renderSubmitDetail(r){
+  const detail = document.getElementById('submitDetail');
+  detail.classList.remove('hidden');
+  detail.classList.add('fade-in');
+  document.getElementById('submitName').textContent = r.name;
+  document.getElementById('submitIdTag').textContent = r.id;
+  document.getElementById('submitMsg').classList.add('hidden');
+
+  renderCourseUploadZone(1, r);
+  renderCourseUploadZone(2, r);
+
+  const remarksLine = document.getElementById('submitRemarksLine');
+  if(r.remarks){
+    remarksLine.classList.remove('hidden');
+    document.getElementById('submitRemarks').textContent = r.remarks;
+  }else{
+    remarksLine.classList.add('hidden');
+  }
+}
+
+function renderCourseUploadZone(course, r){
+  const zone = document.getElementById('courseUpload' + course);
+  const status = course === 1 ? r.course1 : r.course2;
+
+  if(status === 1){
+    zone.innerHTML = '<div class="stamp-badge">제출<br>완료</div>';
+    return;
+  }
+
+  zone.innerHTML = `
+    <input type="file" id="file${course}" accept="application/pdf" class="text-xs max-w-[160px]" />
+    <button id="submitBtn${course}" class="bg-[#1E2438] hover:bg-teal text-white text-[13px] font-bold rounded-lg px-4 py-2 whitespace-nowrap transition disabled:bg-[#E4E0D6] disabled:text-[#8B8A80]">제출</button>
+  `;
+
+  document.getElementById('submitBtn' + course).addEventListener('click', () => {
+    submitFile(course, r);
+  });
+}
+
+function showMsg(el, text, ok){
+  el.textContent = text;
+  el.className = 'msg mt-3 text-[13.5px] px-3.5 py-2.5 rounded-lg ' + (ok ? 'bg-teal-dim text-teal' : 'bg-clay-dim text-stamp');
+}
+
+async function submitFile(course, r){
+  const fileInput = document.getElementById('file' + course);
+  const msgEl = document.getElementById('submitMsg');
+  const btn = document.getElementById('submitBtn' + course);
+
+  if(!fileInput.files || fileInput.files.length === 0){
+    showMsg(msgEl, '먼저 PDF 파일을 선택해주세요.', false);
+    return;
+  }
+  const file = fileInput.files[0];
+  if(file.type !== 'application/pdf'){
+    showMsg(msgEl, 'PDF 파일만 업로드할 수 있습니다.', false);
+    return;
+  }
+  if(file.size > 15 * 1024 * 1024){
+    showMsg(msgEl, '파일 용량은 15MB 이하로 업로드해주세요.', false);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '업로드 중…';
+
+  try{
+    const base64 = await fileToBase64(file);
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'submit',
+        id: r.id,
+        course: course,
+        fileName: file.name,
+        mimeType: file.type,
+        fileData: base64
+      })
+    });
+    const data = await res.json();
+
+    if(!data.success){
+      showMsg(msgEl, data.message || '제출에 실패했습니다.', false);
+      btn.disabled = false;
+      btn.textContent = '제출';
+      if(data.code === 'ALREADY_SUBMITTED'){
+        await loadData();
+        const fresh = ROSTER.find(x => x.id === r.id);
+        renderSubmitDetail(fresh);
+      }
+      return;
+    }
+
+    showMsg(msgEl, data.message, true);
+
+    r[course === 1 ? 'course1' : 'course2'] = 1;
+    STATS[course === 1 ? 'course1' : 'course2'].completed++;
+    STATS[course === 1 ? 'course1' : 'course2'].notCompleted--;
+    renderStats();
+
+    const zone = document.getElementById('courseUpload' + course);
+    zone.innerHTML = '<div class="stamp-badge stamp-pop">제출<br>완료</div>';
+
+  }catch(err){
+    showMsg(msgEl, '오류가 발생했습니다: ' + err.message, false);
+    btn.disabled = false;
+    btn.textContent = '제출';
+  }
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ===== 조회 탭 =====
+setupSearch('checkSearch', 'checkMatchList', (r) => {
+  renderCheckDetail(r);
+});
+
+function renderCheckDetail(r){
+  const detail = document.getElementById('checkDetail');
+  detail.classList.remove('hidden');
+  detail.classList.add('fade-in');
+  document.getElementById('checkName').textContent = r.name;
+  document.getElementById('checkIdTag').textContent = r.id;
+
+  document.getElementById('checkStatus1').innerHTML = statusChip(r.course1);
+  document.getElementById('checkStatus2').innerHTML = statusChip(r.course2);
+
+  const remarksLine = document.getElementById('checkRemarksLine');
+  if(r.remarks){
+    remarksLine.classList.remove('hidden');
+    document.getElementById('checkRemarks').textContent = r.remarks;
+  }else{
+    remarksLine.classList.add('hidden');
+  }
+}
+
+function statusChip(status){
+  if(status === 1) return '<div class="stamp-badge">제출<br>완료</div>';
+  return '<div class="mono text-xs text-clay bg-clay-dim px-2.5 py-1.5 rounded-md font-semibold">미제출</div>';
+}
+
+// ===== 초기 로드 =====
+loadData();
+</script>
+
+</body>
+</html>
