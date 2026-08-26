@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2026 교직원 의무연수 이수증 제출</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Pretendard', 'ui-sans-serif', 'system-ui'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          teal: { DEFAULT: '#0E7C6B', dim: '#E3F2EF' },
+          clay: { DEFAULT: '#C0693A', dim: '#FBEEE5' },
+          stamp: '#B23B2E',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body{ font-family:'Pretendard', ui-sans-serif, system-ui, sans-serif; }
+  .mono{ font-family:'JetBrains Mono', ui-monospace, monospace; }
+  .stamp-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:60px; height:60px; border-radius:9999px;
+    border:2.5px solid #B23B2E; color:#B23B2E;
+    font-weight:800; font-size:11.5px; line-height:1.15;
+    transform:rotate(-9deg); position:relative; flex-shrink:0; text-align:center;
+  }
+  .stamp-badge::before{
+    content:''; position:absolute; inset:4px;
+    border:1px solid #B23B2E; border-radius:9999px; opacity:.55;
+  }
+  .stamp-pop{ animation:stampIn .38s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes stampIn{
+    0%{ transform:rotate(-9deg) scale(1.9); opacity:0; }
+    60%{ opacity:1; }
+    100%{ transform:rotate(-9deg) scale(1); opacity:1; }
+  }
+  .fade-in{ animation:fadeIn .2s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#D9D5C8; border-radius:8px; }
+</style>
+</head>
+<body class="bg-[#F6F4EF] text-[#1E2438] min-h-screen pb-16">
+
+<!-- 헤더 -->
+<header class="max-w-3xl mx-auto px-5 pt-8 pb-2">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="mono text-[11px] tracking-[.14em] text-teal font-medium uppercase">2026 · Teacher Training Compliance</div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1" id="pageTitle">2026 교직원 의무연수 이수증 제출</h1>
+      <p class="text-sm text-[#4B5266] mt-1" id="pageSubtitle">의무연수1 · 의무연수2 이수증을 제출하고 현황을 확인하세요.</p>
+    </div>
+    <button id="adminLinkBtn" class="text-xs font-semibold text-[#8B8A80] border border-[#E4E0D6] bg-white rounded-lg px-3 py-1.5 hover:border-teal hover:text-teal transition whitespace-nowrap mt-1">관리자</button>
+  </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-5 mt-4 space-y-6">
+
+  <!-- ===================== 공개 화면 ===================== -->
+  <div id="publicView" class="space-y-6">
+
+    <!-- 마감 안내 배너 -->
+    <div class="flex items-start gap-3 bg-clay-dim border border-clay/30 rounded-2xl px-5 py-4">
+      <span class="text-xl leading-none">⏰</span>
+      <div>
+        <p class="font-bold text-clay text-[15px]" id="deadlineTitle">11월까지 의무연수1 · 의무연수2 이수증 제출을 완료해주세요.</p>
+        <p class="text-[13px] text-[#8B6A54] mt-0.5" id="deadlineSub">기한 내 미제출 시 별도 안내가 있을 예정입니다.</p>
+      </div>
+    </div>
+
+    <!-- 현황 (상시 노출) -->
+    <section>
+      <div id="statGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-white border border-[#E4E0D6] rounded-2xl p-6">
+          <div class="mono text-[11px] tracking-wide text-[#8B8A80] uppercase">Loading</div>
+          <h2 class="text-lg font-bold mt-1">불러오는 중…</h2>
+        </div>
+        <div class="bg-white border border-[#E4E0D6] rounded-2xl p-6">
+          <div class="mono text-[11px] tracking-wide text-[#8B8A80] uppercase">Loading</div>
+          <h2 class="text-lg font-bold mt-1">불러오는 중…</h2>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-3">
+        <div class="mono text-xs text-[#8B8A80]" id="updatedAt">-</div>
+        <button id="refreshBtn" class="text-xs font-semibold text-[#4B5266] border border-[#E4E0D6] bg-white rounded-lg px-3 py-1.5 hover:border-teal hover:text-teal transition">새로고침</button>
+      </div>
+    </section>
+
+    <!-- 탭: 제출 / 조회 -->
+    <section>
+      <div class="flex gap-1 border-b border-[#E4E0D6]">
+        <button class="tab-btn active text-[14.5px] font-semibold px-4 pb-3 pt-2 border-b-2 border-teal text-[#1E2438]" data-tab="submit">제출</button>
+        <button class="tab-btn text-[14.5px] font-semibold px-4 pb-3 pt-2 border-b-2 border-transparent text-[#8B8A80]" data-tab="check">조회</button>
+      </div>
+
+      <!-- 제출 패널 -->
+      <div class="panel mt-5" id="panel-submit">
+        <div class="bg-white border border-[#E4E0D6] rounded-2xl p-5">
+          <label class="text-xs font-semibold text-[#8B8A80] tracking-wide">이름 검색</label>
+          <input type="text" id="submitSearch" placeholder="이름을 입력하세요 (예: 홍길동)" autocomplete="off"
+            class="w-full mt-2 px-4 py-3 border border-[#E4E0D6] rounded-xl bg-[#F6F4EF] text-[15px] focus:outline-none focus:ring-2 focus:ring-teal" />
+          <div id="submitMatchList" class="hidden mt-2 max-h-56 overflow-y-auto border border-[#E4E0D6] rounded-xl divide-y divide-[#E4E0D6]"></div>
+        </div>
+
+        <div class="detail-card hidden mt-4 bg-white border border-[#E4E0D6] rounded-2xl p-5" id="submitDetail">
+          <div class="flex items-center gap-2 text-lg font-extrabold">
+            <span id="submitName">-</span>
+            <span class="mono text-[11px] font-normal text-[#8B8A80] bg-[#F6F4EF] px-2 py-0.5 rounded" id="submitIdTag">-</span>
+          </div>
+
+          <div class="course-row flex items-center justify-between gap-4 flex-wrap mt-4 p-4 border border-[#E4E0D6] rounded-xl" id="courseRow1">
+            <div>
+              <div class="font-bold text-[14.5px]">의무연수1</div>
+              <div class="text-xs text-[#8B8A80] mt-0.5">PDF 이수증 첨부 후 제출</div>
+            </div>
+            <div class="flex items-center gap-2" id="courseUpload1"></div>
+          </div>
+
+          <div class="course-row flex items-center justify-between gap-4 flex-wrap mt-3 p-4 border border-[#E4E0D6] rounded-xl" id="courseRow2">
+            <div>
+              <div class="font-bold text-[14.5px]">의무연수2</div>
+              <div class="text-xs text-[#8B8A80] mt-0.5">PDF 이수증 첨부 후 제출</div>
+            </div>
+            <div class="flex items-center gap-2" id="courseUpload2"></div>
+          </div>
+
+          <div class="hidden mt-4 pt-3 border-t border-dashed border-[#E4E0D6] text-[13px] text-[#4B5266]" id="submitRemarksLine">
+            <span class="text-[#8B8A80]">비고</span> · <span id="submitRemarks"></span>
+          </div>
+
+          <div class="msg hidden mt-3 text-[13.5px] px-3.5 py-2.5 rounded-lg" id="submitMsg"></div>
+        </div>
+      </div>
+
+      <!-- 조회 패널 -->
+      <div class="panel hidden mt-5" id="panel-check">
+        <div class="bg-white border border-[#E4E0D6] rounded-2xl p-5">
+          <label class="text-xs font-semibold text-[#8B8A80] tracking-wide">이름 검색</label>
+          <input type="text" id="checkSearch" placeholder="이름을 입력하세요 (예: 홍길동)" autocomplete="off"
+            class="w-full mt-2 px-4 py-3 border border-[#E4E0D6] rounded-xl bg-[#F6F4EF] text-[15px] focus:outline-none focus:ring-2 focus:ring-teal" />
+          <div id="checkMatchList" class="hidden mt-2 max-h-56 overflow-y-auto border border-[#E4E0D6] rounded-xl divide-y divide-[#E4E0D6]"></div>
+        </div>
+
+        <div class="detail-card hidden mt-4 bg-white border border-[#E4E0D6] rounded-2xl p-5" id="checkDetail">
+          <div class="flex items-center gap-2 text-lg font-extrabold">
+            <span id="checkName">-</span>
+            <span class="mono text-[11px] font-normal text-[#8B8A80] bg-[#F6F4EF] px-2 py-0.5 rounded" id="checkIdTag">-</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-4 flex-wrap mt-4 p-4 border border-[#E4E0D6] rounded-xl">
+            <div class="font-bold text-[14.5px]">의무연수1</div>
+            <div id="checkStatus1"></div>
+          </div>
+
+          <div class="flex items-center justify-between gap-4 flex-wrap mt-3 p-4 border border-[#E4E0D6] rounded-xl">
+            <div class="font-bold text-[14.5px]">의무연수2</div>
+            <div id="checkStatus2"></div>
+          </div>
+
+          <div class="hidden mt-4 pt-3 border-t border-dashed border-[#E4E0D6] text-[13px] text-[#4B5266]" id="checkRemarksLine">
+            <span class="text-[#8B8A80]">비고</span> · <span id="checkRemarks"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== 관리자 화면 ===================== -->
+  <div id="adminView" class="hidden space-y-5">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-extrabold">관리자 페이지</h2>
+      <button id="adminLogoutBtn" class="text-xs font-semibold text-[#4B5266] border border-[#E4E0D6] bg-white rounded-lg px-3 py-1.5 hover:border-clay hover:text-clay transition">로그아웃</button>
+    </div>
+
+    <div class="bg-white border border-[#E4E0D6] rounded-2xl p-5" id="adminStatsBox">
+      <div class="mono text-xs text-[#8B8A80]" id="adminUpdatedAt">-</div>
+    </div>
+
+    <!-- 신규 추가 -->
+    <div class="bg-white border border-[#E4E0D6] rounded-2xl p-5">
+      <div class="font-bold text-[14.5px] mb-3">신규 이수자 추가</div>
+      <div class="flex flex-wrap gap-2">
+        <input type="text" id="adminNewName" placeholder="이름" class="flex-1 min-w-[120px] px-3 py-2.5 border border-[#E4E0D6] rounded-lg bg-[#F6F4EF] text-sm focus:outline-none focus:ring-2 focus:ring-teal" />
+        <input type="text" id="adminNewRemarks" placeholder="비고 (선택)" class="flex-1 min-w-[120px] px-3 py-2.5 border border-[#E4E0D6] rounded-lg bg-[#F6F4EF] text-sm focus:outline-none focus:ring-2 focus:ring-teal" />
+        <button id="adminAddBtn" class="bg-[#1E2438] hover:bg-teal text-white text-[13px] font-bold rounded-lg px-4 py-2 whitespace-nowrap transition">추가</button>
+      </div>
+      <div class="msg hidden mt-3 text-[13px] px-3.5 py-2.5 rounded-lg" id="adminAddMsg"></div>
+    </div>
+
+    <!-- 명단 검색 -->
+    <div class="bg-white border border-[#E4E0D6] rounded-2xl p-5">
+      <label class="text-xs font-semibold text-[#8B8A80] tracking-wide">전체 명단 검색</label>
+      <input type="text" id="adminSearch" placeholder="이름으로 필터링" autocomplete="off"
+        class="w-full mt-2 px-4 py-2.5 border border-[#E4E0D6] rounded-xl bg-[#F6F4EF] text-sm focus:outline-none focus:ring-2 focus:ring-teal" />
+    </div>
+
+    <!-- 명단 목록 -->
+    <div id="adminList" class="space-y-3"></div>
+  </div>
+
+</main>
+
+<!-- 관리자 로그인 모달 -->
+<div id="adminLoginModal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center px-5 z-50">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
+    <div class="font-extrabold text-lg mb-1">관리자 로그인</div>
+    <p class="text-xs text-[#8B8A80] mb-4">비밀번호는 구글시트 '설정' 탭에서 확인/변경할 수 있어요.</p>
+    <input type="password" id="adminPasswordInput" placeholder="비밀번호" autocomplete="off"
+      class="w-full px-4 py-3 border border-[#E4E0D6] rounded-xl bg-[#F6F4EF] text-[15px] focus:outline-none focus:ring-2 focus:ring-teal" />
+    <div class="msg hidden mt-2 text-[13px] px-3.5 py-2 rounded-lg" id="adminLoginMsg"></div>
+    <div class="flex gap-2 mt-4">
+      <button id="adminLoginCancelBtn" class="flex-1 border border-[#E4E0D6] rounded-lg py-2.5 text-sm font-semibold text-[#4B5266]">취소</button>
+      <button id="adminLoginSubmitBtn" class="flex-1 bg-[#1E2438] hover:bg-teal text-white rounded-lg py-2.5 text-sm font-bold transition">로그인</button>
+    </div>
+  </div>
+</div>
+
+<footer class="max-w-3xl mx-auto px-5 mt-10 mono text-[11px] text-[#8B8A80]">2026 교직원 의무연수 이수증 제출 시스템 · Google Sheets 연동</footer>
+
+<script>
+// ⚠️ 배포 후 Apps Script 웹 앱 URL로 교체하세요
+const SCRIPT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+
+let ROSTER = [];       // 공개용 (제외 대상 필터링됨)
+let STATS = null;
+let SETTINGS = null;
+
+let ADMIN_PASSWORD = null;   // 로그인 성공 시에만 메모리에 저장 (세션 저장 안 함)
+let ADMIN_ROSTER = [];       // 관리자용 (제외 대상 포함)
+let ADMIN_STATS = null;
+
+// ===== 탭 전환 (제출/조회) =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active', 'border-teal', 'text-[#1E2438]');
+      b.classList.add('border-transparent', 'text-[#8B8A80]');
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+
+    btn.classList.add('active', 'border-teal', 'text-[#1E2438]');
+    btn.classList.remove('border-transparent', 'text-[#8B8A80]');
+    document.getElementById('panel-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// ===== 공개 데이터 로드 =====
+async function loadData(){
+  try{
+    const res = await fetch(SCRIPT_URL + '?action=list&_=' + Date.now(), { cache: 'no-store' });
+    const data = await res.json();
+    if(!data.success){ throw new Error(data.message || '데이터를 불러오지 못했습니다.'); }
+    ROSTER = data.roster;
+    STATS = data.stats;
+    SETTINGS = data.settings;
+    applySettings();
+    renderStats();
+    document.getElementById('updatedAt').textContent =
+      '마지막 업데이트 ' + new Date(data.updatedAt).toLocaleString('ko-KR');
+  }catch(err){
+    document.getElementById('statGrid').innerHTML =
+      `<div class="bg-white border border-[#E4E0D6] rounded-2xl p-6 sm:col-span-2">
+         <div class="mono text-[11px] text-stamp uppercase">Error</div>
+         <h2 class="text-lg font-bold mt-1">불러오기 실패</h2>
+         <p class="text-sm text-[#8B8A80] mt-2">${err.message}<br>SCRIPT_URL 설정을 확인하세요.</p>
+       </div>`;
+  }
+}
+
+function applySettings(){
+  if(!SETTINGS) return;
+  document.getElementById('pageTitle').textContent = SETTINGS.title;
+  document.getElementById('pageSubtitle').textContent = SETTINGS.subtitle;
+  document.getElementById('deadlineTitle').textContent = SETTINGS.deadlineTitle;
+  document.getElementById('deadlineSub').textContent = SETTINGS.deadlineSub;
+  document.title = SETTINGS.title;
+}
+
+function renderStats(){
+  const grid = document.getElementById('statGrid');
+  grid.innerHTML = statCardHtml('의무연수1', STATS.course1, SETTINGS && SETTINGS.course1Desc) +
+                    statCardHtml('의무연수2', STATS.course2, SETTINGS && SETTINGS.course2Desc);
+
+  document.querySelectorAll('.desc-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(btn.dataset.target);
+      panel.classList.toggle('hidden');
+      btn.textContent = panel.classList.contains('hidden') ? '자세히 보기 ▾' : '접기 ▴';
+    });
+  });
+}
+
+function statCardHtml(label, s, descBullets){
+  const total = s.completed + s.notCompleted;
+  const pct = total ? Math.round((s.completed/total)*100) : 0;
+  const descId = 'desc-' + label;
+  const hasDesc = descBullets && descBullets.length > 0;
+
+  const descHtml = hasDesc ? `
+    <button class="desc-toggle text-[11.5px] font-semibold text-teal mt-3" data-target="${descId}">자세히 보기 ▾</button>
+    <ul class="hidden mt-2 space-y-1 text-[12.5px] text-[#4B5266] list-disc list-inside" id="${descId}">
+      ${descBullets.map(b => `<li>${escapeHtml(b)}</li>`).join('')}
+    </ul>` : '';
+
+  return `
+    <div class="bg-white border border-[#E4E0D6] rounded-2xl p-6">
+      <div class="mono text-[11px] tracking-wide text-[#8B8A80] uppercase">${label} · Total ${total}</div>
+      <h2 class="text-lg font-bold mt-1">${label} 이수 현황</h2>
+      <div class="flex items-baseline justify-between py-2">
+        <div class="text-[13.5px] text-[#4B5266]">이수 완료</div>
+        <div class="mono text-xl font-bold text-teal">${s.completed}</div>
+      </div>
+      <div class="flex items-baseline justify-between py-2 border-t border-dashed border-[#E4E0D6]">
+        <div class="text-[13.5px] text-[#4B5266]">미이수</div>
+        <div class="mono text-xl font-bold text-clay">${s.notCompleted}</div>
+      </div>
+      <div class="h-2 rounded-full bg-[#E4E0D6] mt-3 overflow-hidden">
+        <div class="h-full rounded-full bg-teal transition-all duration-500" style="width:${pct}%"></div>
+      </div>
+      ${descHtml}
+    </div>`;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  document.getElementById('statGrid').innerHTML =
+    `<div class="bg-white border border-[#E4E0D6] rounded-2xl p-6"><div class="mono text-[11px] text-[#8B8A80] uppercase">Loading</div><h2 class="text-lg font-bold mt-1">불러오는 중…</h2></div>`.repeat(2);
+  loadData();
+});
+
+// ===== 검색 공통 로직 =====
+function setupSearch(inputId, listId, onSelect, sourceArr){
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if(!q){ list.classList.add('hidden'); list.innerHTML=''; return; }
+    const matches = (sourceArr || ROSTER).filter(r => r.name.includes(q)).slice(0, 20);
+    if(matches.length === 0){
+      list.innerHTML = '<div class="px-4 py-3 text-sm text-[#8B8A80]">일치하는 이름이 없습니다</div>';
+      list.classList.remove('hidden');
+      return;
+    }
+    list.innerHTML = matches.map(m =>
+      `<div class="match-item flex items-center justify-between px-4 py-2.5 text-[14.5px] cursor-pointer hover:bg-teal-dim" data-id="${m.id}">
+        <span>${m.name}</span>
+        <span class="mono text-[11px] text-[#8B8A80]">${m.id}</span>
+      </div>`
+    ).join('');
+    list.classList.remove('hidden');
+
+    list.querySelectorAll('.match-item[data-id]').forEach(item => {
+      item.addEventListener('click', () => {
+        const r = (sourceArr || ROSTER).find(x => x.id === item.dataset.id);
+        input.value = r.name;
+        list.classList.add('hidden');
+        onSelect(r);
+      });
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!input.contains(e.target) && !list.contains(e.target)) list.classList.add('hidden');
+  });
+}
+
+// ===== 제출 탭 =====
+setupSearch('submitSearch', 'submitMatchList', (r) => {
+  renderSubmitDetail(r);
+});
+
+function renderSubmitDetail(r){
+  const detail = document.getElementById('submitDetail');
+  detail.classList.remove('hidden');
+  detail.classList.add('fade-in');
+  document.getElementById('submitName').textContent = r.name;
+  document.getElementById('submitIdTag').textContent = r.id;
+  document.getElementById('submitMsg').classList.add('hidden');
+
+  renderCourseUploadZone(1, r);
+  renderCourseUploadZone(2, r);
+
+  const remarksLine = document.getElementById('submitRemarksLine');
+  if(r.remarks){
+    remarksLine.classList.remove('hidden');
+    document.getElementById('submitRemarks').textContent = r.remarks;
+  }else{
+    remarksLine.classList.add('hidden');
+  }
+}
+
+function renderCourseUploadZone(course, r){
+  const zone = document.getElementById('courseUpload' + course);
+  const status = course === 1 ? r.course1 : r.course2;
+
+  if(status === 1){
+    zone.innerHTML = '<div class="stamp-badge">제출<br>완료</div>';
+    return;
+  }
+
+  zone.innerHTML = `
+    <input type="file" id="file${course}" accept="application/pdf" class="text-xs max-w-[160px]" />
+    <button id="submitBtn${course}" class="bg-[#1E2438] hover:bg-teal text-white text-[13px] font-bold rounded-lg px-4 py-2 whitespace-nowrap transition disabled:bg-[#E4E0D6] disabled:text-[#8B8A80]">제출</button>
+  `;
+
+  document.getElementById('submitBtn' + course).addEventListener('click', () => {
+    submitFile(course, r);
+  });
+}
+
+function showMsg(el, text, ok){
+  el.textContent = text;
+  el.className = 'msg mt-3 text-[13.5px] px-3.5 py-2.5 rounded-lg ' + (ok ? 'bg-teal-dim text-teal' : 'bg-clay-dim text-stamp');
+}
+
+async function submitFile(course, r){
+  const fileInput = document.getElementById('file' + course);
+  const msgEl = document.getElementById('submitMsg');
+  const btn = document.getElementById('submitBtn' + course);
+
+  if(!fileInput.files || fileInput.files.length === 0){
+    showMsg(msgEl, '먼저 PDF 파일을 선택해주세요.', false);
+    return;
+  }
+  const file = fileInput.files[0];
+  if(file.type !== 'application/pdf'){
+    showMsg(msgEl, 'PDF 파일만 업로드할 수 있습니다.', false);
+    return;
+  }
+  if(file.size > 15 * 1024 * 1024){
+    showMsg(msgEl, '파일 용량은 15MB 이하로 업로드해주세요.', false);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '업로드 중…';
+
+  try{
+    const base64 = await fileToBase64(file);
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'submit',
+        id: r.id,
+        course: course,
+        fileName: file.name,
+        mimeType: file.type,
+        fileData: base64
+      })
+    });
+    const data = await res.json();
+
+    if(!data.success){
+      showMsg(msgEl, data.message || '제출에 실패했습니다.', false);
+      btn.disabled = false;
+      btn.textContent = '제출';
+      if(data.code === 'ALREADY_SUBMITTED'){
+        await loadData();
+        const fresh = ROSTER.find(x => x.id === r.id);
+        renderSubmitDetail(fresh);
+      }
+      return;
+    }
+
+    showMsg(msgEl, data.message, true);
+
+    r[course === 1 ? 'course1' : 'course2'] = 1;
+    STATS[course === 1 ? 'course1' : 'course2'].completed++;
+    STATS[course === 1 ? 'course1' : 'course2'].notCompleted--;
+    renderStats();
+
+    const zone = document.getElementById('courseUpload' + course);
+    zone.innerHTML = '<div class="stamp-badge stamp-pop">제출<br>완료</div>';
+
+  }catch(err){
+    showMsg(msgEl, '오류가 발생했습니다: ' + err.message, false);
+    btn.disabled = false;
+    btn.textContent = '제출';
+  }
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ===== 조회 탭 =====
+setupSearch('checkSearch', 'checkMatchList', (r) => {
+  renderCheckDetail(r);
+});
+
+function renderCheckDetail(r){
+  const detail = document.getElementById('checkDetail');
+  detail.classList.remove('hidden');
+  detail.classList.add('fade-in');
+  document.getElementById('checkName').textContent = r.name;
+  document.getElementById('checkIdTag').textContent = r.id;
+
+  document.getElementById('checkStatus1').innerHTML = statusChip(r.course1);
+  document.getElementById('checkStatus2').innerHTML = statusChip(r.course2);
+
+  const remarksLine = document.getElementById('checkRemarksLine');
+  if(r.remarks){
+    remarksLine.classList.remove('hidden');
+    document.getElementById('checkRemarks').textContent = r.remarks;
+  }else{
+    remarksLine.classList.add('hidden');
+  }
+}
+
+function statusChip(status){
+  if(status === 1) return '<div class="stamp-badge">제출<br>완료</div>';
+  return '<div class="mono text-xs text-clay bg-clay-dim px-2.5 py-1.5 rounded-md font-semibold">미제출</div>';
+}
+
+// ===================== 관리자 =====================
+
+document.getElementById('adminLinkBtn').addEventListener('click', () => {
+  document.getElementById('adminLoginModal').classList.remove('hidden');
+  document.getElementById('adminPasswordInput').value = '';
+  document.getElementById('adminLoginMsg').classList.add('hidden');
+  document.getElementById('adminPasswordInput').focus();
+});
+
+document.getElementById('adminLoginCancelBtn').addEventListener('click', () => {
+  document.getElementById('adminLoginModal').classList.add('hidden');
+});
+
+document.getElementById('adminPasswordInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') attemptAdminLogin();
+});
+document.getElementById('adminLoginSubmitBtn').addEventListener('click', attemptAdminLogin);
+
+async function attemptAdminLogin(){
+  const pwInput = document.getElementById('adminPasswordInput');
+  const msgEl = document.getElementById('adminLoginMsg');
+  const pw = pwInput.value;
+
+  if(!pw){
+    showMsg(msgEl, '비밀번호를 입력해주세요.', false);
+    return;
+  }
+
+  try{
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'adminLogin', password: pw })
+    });
+    const data = await res.json();
+    if(!data.success){
+      showMsg(msgEl, data.message || '로그인 실패', false);
+      return;
+    }
+    ADMIN_PASSWORD = pw;
+    document.getElementById('adminLoginModal').classList.add('hidden');
+    document.getElementById('publicView').classList.add('hidden');
+    document.getElementById('adminView').classList.remove('hidden');
+    loadAdminData();
+  }catch(err){
+    showMsg(msgEl, '오류: ' + err.message, false);
+  }
+}
+
+document.getElementById('adminLogoutBtn').addEventListener('click', () => {
+  ADMIN_PASSWORD = null;
+  document.getElementById('adminView').classList.add('hidden');
+  document.getElementById('publicView').classList.remove('hidden');
+});
+
+async function loadAdminData(){
+  const listEl = document.getElementById('adminList');
+  listEl.innerHTML = '<div class="text-sm text-[#8B8A80] px-1">불러오는 중…</div>';
+  try{
+    const res = await fetch(SCRIPT_URL + '?action=adminList&password=' + encodeURIComponent(ADMIN_PASSWORD) + '&_=' + Date.now(), { cache: 'no-store' });
+    const data = await res.json();
+    if(!data.success){ throw new Error(data.message || '불러오기 실패'); }
+    ADMIN_ROSTER = data.roster;
+    ADMIN_STATS = data.stats;
+    document.getElementById('adminUpdatedAt').textContent =
+      '마지막 업데이트 ' + new Date(data.updatedAt).toLocaleString('ko-KR') +
+      ' · 활성 인원 ' + (ADMIN_STATS.course1.completed + ADMIN_STATS.course1.notCompleted) + '명';
+    renderAdminList(ADMIN_ROSTER);
+  }catch(err){
+    listEl.innerHTML = `<div class="text-sm text-stamp px-1">불러오기 실패: ${err.message}</div>`;
+  }
+}
+
+document.getElementById('adminSearch').addEventListener('input', (e) => {
+  const q = e.target.value.trim();
+  const filtered = q ? ADMIN_ROSTER.filter(r => r.name.includes(q)) : ADMIN_ROSTER;
+  renderAdminList(filtered);
+});
+
+function renderAdminList(list){
+  const container = document.getElementById('adminList');
+  if(list.length === 0){
+    container.innerHTML = '<div class="text-sm text-[#8B8A80] px-1">표시할 인원이 없습니다.</div>';
+    return;
+  }
+
+  container.innerHTML = list.map(r => adminRowHtml(r)).join('');
+
+  list.forEach(r => {
+    const saveBtn = document.getElementById('save-' + r.id);
+    if(saveBtn) saveBtn.addEventListener('click', () => adminSave(r.id));
+
+    const delBtn = document.getElementById('del-' + r.id);
+    if(delBtn) delBtn.addEventListener('click', () => adminDeletePrompt(r.id));
+
+    const restoreBtn = document.getElementById('restore-' + r.id);
+    if(restoreBtn) restoreBtn.addEventListener('click', () => adminRestore(r.id));
+  });
+}
+
+function adminRowHtml(r){
+  if(r.excluded){
+    return `
+      <div class="bg-[#F3F1EA] border border-[#E4E0D6] rounded-2xl p-4 opacity-80">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <span class="font-bold text-[#8B8A80] line-through">${escapeHtml(r.name)}</span>
+            <span class="mono text-[10.5px] text-[#8B8A80] ml-1">${r.id}</span>
+            <div class="text-xs text-clay mt-1">${escapeHtml(r.remarks)}</div>
+          </div>
+          <button id="restore-${r.id}" class="text-xs font-semibold text-teal border border-teal/40 bg-teal-dim rounded-lg px-3 py-1.5">복구</button>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="bg-white border border-[#E4E0D6] rounded-2xl p-4">
+      <div class="flex flex-wrap gap-2 items-center">
+        <input type="text" id="name-${r.id}" value="${escapeAttr(r.name)}" class="flex-1 min-w-[100px] px-3 py-2 border border-[#E4E0D6] rounded-lg text-sm font-semibold" />
+        <span class="mono text-[10.5px] text-[#8B8A80]">${r.id}</span>
+      </div>
+      <input type="text" id="remarks-${r.id}" value="${escapeAttr(r.remarks)}" placeholder="비고" class="w-full mt-2 px-3 py-2 border border-[#E4E0D6] rounded-lg text-xs" />
+      <div class="flex items-center gap-5 mt-3">
+        <label class="flex items-center gap-1.5 text-xs font-semibold text-[#4B5266]">
+          <input type="checkbox" id="c1-${r.id}" ${r.course1 === 1 ? 'checked' : ''} class="w-4 h-4 accent-teal" /> 의무연수1 완료
+        </label>
+        <label class="flex items-center gap-1.5 text-xs font-semibold text-[#4B5266]">
+          <input type="checkbox" id="c2-${r.id}" ${r.course2 === 1 ? 'checked' : ''} class="w-4 h-4 accent-teal" /> 의무연수2 완료
+        </label>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button id="save-${r.id}" class="flex-1 bg-[#1E2438] hover:bg-teal text-white text-xs font-bold rounded-lg py-2 transition">저장</button>
+        <button id="del-${r.id}" class="text-xs font-semibold text-clay border border-clay/40 bg-clay-dim rounded-lg px-3 py-2">삭제</button>
+      </div>
+      <div class="msg hidden mt-2 text-xs px-3 py-2 rounded-lg" id="msg-${r.id}"></div>
+    </div>`;
+}
+
+function escapeAttr(str){
+  return String(str || '').replace(/"/g, '&quot;');
+}
+
+async function adminApiCall(payload){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ password: ADMIN_PASSWORD }, payload))
+  });
+  return res.json();
+}
+
+async function adminSave(id){
+  const msgEl = document.getElementById('msg-' + id);
+  const name = document.getElementById('name-' + id).value.trim();
+  const remarks = document.getElementById('remarks-' + id).value;
+  const c1 = document.getElementById('c1-' + id).checked ? 1 : 0;
+  const c2 = document.getElementById('c2-' + id).checked ? 1 : 0;
+
+  if(!name){ showMsg(msgEl, '이름을 입력해주세요.', false); return; }
+
+  const data = await adminApiCall({ action: 'adminEdit', id, name, remarks, course1: c1, course2: c2 });
+  showMsg(msgEl, data.message, data.success);
+  if(data.success) loadAdminData();
+}
+
+function adminDeletePrompt(id){
+  const reason = prompt('삭제(제외) 사유를 입력해주세요. (예: 전출, 퇴직, 중복입력 등)');
+  if(reason === null) return;
+  if(!reason.trim()){ alert('사유를 입력해야 삭제할 수 있습니다.'); return; }
+  adminDelete(id, reason.trim());
+}
+
+async function adminDelete(id, reason){
+  const data = await adminApiCall({ action: 'adminDelete', id, reason });
+  if(!data.success){ alert(data.message); return; }
+  loadAdminData();
+}
+
+async function adminRestore(id){
+  const data = await adminApiCall({ action: 'adminRestore', id });
+  if(!data.success){ alert(data.message); return; }
+  loadAdminData();
+}
+
+document.getElementById('adminAddBtn').addEventListener('click', async () => {
+  const nameInput = document.getElementById('adminNewName');
+  const remarksInput = document.getElementById('adminNewRemarks');
+  const msgEl = document.getElementById('adminAddMsg');
+  const name = nameInput.value.trim();
+
+  if(!name){ showMsg(msgEl, '이름을 입력해주세요.', false); return; }
+
+  const data = await adminApiCall({ action: 'adminAdd', name, remarks: remarksInput.value });
+  showMsg(msgEl, data.message, data.success);
+  if(data.success){
+    nameInput.value = '';
+    remarksInput.value = '';
+    loadAdminData();
+  }
+});
+
+// ===== 초기 로드 =====
+loadData();
+</script>
+
+</body>
+</html>
